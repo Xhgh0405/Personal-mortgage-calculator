@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.Windows.Forms;
 
 namespace 個人房貸試算器
@@ -8,69 +9,176 @@ namespace 個人房貸試算器
         public Form1()
         {
             InitializeComponent();
+            UpdateDownPaymentMode();
         }
 
-        // ===== 計算按鈕 =====
+        private void DownPaymentModeChanged(object sender, EventArgs e)
+        {
+            UpdateDownPaymentMode();
+        }
+
+        private void UpdateDownPaymentMode()
+        {
+            bool usePercent = rdoDownPercent.Checked;
+
+            txtDownRate.Enabled = usePercent;
+            lblDownRateText.Enabled = usePercent;
+
+            txtDownAmount.Enabled = !usePercent;
+            lblDownAmountText.Enabled = !usePercent;
+
+            txtDownRate.BackColor = usePercent ? Color.White : Color.Gainsboro;
+            txtDownAmount.BackColor = usePercent ? Color.Gainsboro : Color.White;
+        }
+
         private void btnCalc_Click(object sender, EventArgs e)
         {
-            // ===== 輸入驗證（老師會看）=====
-            if (!double.TryParse(txtHousePrice.Text, out double house) ||
-                !double.TryParse(txtDownRate.Text, out double downRatePercent) ||
-                !double.TryParse(txtInterest.Text, out double ratePercent) ||
-                !int.TryParse(txtYears.Text, out int years) ||
-                !int.TryParse(txtGrace.Text, out int graceYears))
+            if (!double.TryParse(txtHousePrice.Text, out double housePrice) || housePrice <= 0)
             {
-                MessageBox.Show("請輸入正確數值！", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("房屋總價必須是大於 0 的數值。", "輸入錯誤", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtHousePrice.Focus();
                 return;
             }
 
-            // ===== 轉換 =====
-            double downRate = downRatePercent / 100.0;
-            double annualRate = ratePercent / 100.0;
-
-            double loan = house * (1 - downRate);
-            double monthlyRate = annualRate / 12;
-            int totalMonths = years * 12;
-            int graceMonths = graceYears * 12;
-
-            double monthlyPayment = 0;
-            double totalInterest = 0;
-            double totalPayment = 0;
-
-            // ===== 有寬限期（加分點🔥）=====
-            if (graceMonths > 0)
+            if (!double.TryParse(txtInterest.Text, out double annualRatePercent) || annualRatePercent < 0)
             {
-                // 寬限期：只繳利息
-                double interestOnly = loan * monthlyRate;
+                MessageBox.Show("年利率必須是大於或等於 0 的數值。", "輸入錯誤", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtInterest.Focus();
+                return;
+            }
 
-                // 剩餘期數
-                int remainMonths = totalMonths - graceMonths;
+            if (!int.TryParse(txtYears.Text, out int years) || years <= 0)
+            {
+                MessageBox.Show("貸款年限必須是大於 0 的整數。", "輸入錯誤", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtYears.Focus();
+                return;
+            }
 
-                double normalPayment = loan *
-                    (monthlyRate * Math.Pow(1 + monthlyRate, remainMonths)) /
-                    (Math.Pow(1 + monthlyRate, remainMonths) - 1);
+            if (!int.TryParse(txtGrace.Text, out int graceYears) || graceYears < 0)
+            {
+                MessageBox.Show("寬限期必須是大於或等於 0 的整數。", "輸入錯誤", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtGrace.Focus();
+                return;
+            }
 
-                monthlyPayment = normalPayment;
+            if (graceYears >= years)
+            {
+                MessageBox.Show("寬限期必須小於貸款年限。", "輸入錯誤", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtGrace.Focus();
+                return;
+            }
 
-                totalPayment = (interestOnly * graceMonths) + (normalPayment * remainMonths);
-                totalInterest = totalPayment - loan;
+            double downPayment;
+            double downRatePercent = 0;
+
+            if (rdoDownPercent.Checked)
+            {
+                if (!double.TryParse(txtDownRate.Text, out downRatePercent) || downRatePercent < 0 || downRatePercent >= 100)
+                {
+                    MessageBox.Show("自備款比例必須介於 0 到 100 之間，且不能等於 100。", "輸入錯誤", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    txtDownRate.Focus();
+                    return;
+                }
+
+                downPayment = housePrice * (downRatePercent / 100.0);
             }
             else
             {
-                // 一般本息攤還
-                monthlyPayment = loan *
-                    (monthlyRate * Math.Pow(1 + monthlyRate, totalMonths)) /
-                    (Math.Pow(1 + monthlyRate, totalMonths) - 1);
+                if (!double.TryParse(txtDownAmount.Text, out downPayment) || downPayment < 0 || downPayment >= housePrice)
+                {
+                    MessageBox.Show("自備款金額必須大於或等於 0，且小於房屋總價。", "輸入錯誤", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    txtDownAmount.Focus();
+                    return;
+                }
 
-                totalPayment = monthlyPayment * totalMonths;
-                totalInterest = totalPayment - loan;
+                downRatePercent = downPayment / housePrice * 100.0;
             }
 
-            // ===== 顯示（格式化）=====
-            lblLoan.Text = loan.ToString("N2");
-            lblMonthly.Text = monthlyPayment.ToString("N2");
-            lblTotalInt.Text = totalInterest.ToString("N2");
-            lblTotalPay.Text = totalPayment.ToString("N2");
+            double loanAmount = housePrice - downPayment;
+            double annualRate = annualRatePercent / 100.0;
+            double monthlyRate = annualRate / 12.0;
+
+            int totalMonths = years * 12;
+            int graceMonths = graceYears * 12;
+            int repayMonths = totalMonths - graceMonths;
+
+            if (loanAmount <= 0)
+            {
+                MessageBox.Show("貸款金額必須大於 0。", "輸入錯誤", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            double monthlyPayment = 0;
+            double graceMonthlyPayment = 0;
+            double firstInterest = 0;
+            double firstPrincipal = 0;
+            double totalInterest = 0;
+            double totalPayment = 0;
+
+            if (monthlyRate == 0)
+            {
+                if (graceMonths > 0)
+                {
+                    graceMonthlyPayment = 0;
+                    monthlyPayment = loanAmount / repayMonths;
+                    firstInterest = 0;
+                    firstPrincipal = 0;
+                    totalPayment = monthlyPayment * repayMonths;
+                    totalInterest = 0;
+                }
+                else
+                {
+                    monthlyPayment = loanAmount / totalMonths;
+                    graceMonthlyPayment = 0;
+                    firstInterest = 0;
+                    firstPrincipal = monthlyPayment;
+                    totalPayment = loanAmount;
+                    totalInterest = 0;
+                }
+            }
+            else
+            {
+                if (graceMonths > 0)
+                {
+                    graceMonthlyPayment = loanAmount * monthlyRate;
+                    monthlyPayment = CalculateAmortizedPayment(loanAmount, monthlyRate, repayMonths);
+
+                    firstInterest = graceMonthlyPayment;
+                    firstPrincipal = 0;
+
+                    totalPayment = (graceMonthlyPayment * graceMonths) + (monthlyPayment * repayMonths);
+                    totalInterest = totalPayment - loanAmount;
+                }
+                else
+                {
+                    monthlyPayment = CalculateAmortizedPayment(loanAmount, monthlyRate, totalMonths);
+
+                    firstInterest = loanAmount * monthlyRate;
+                    firstPrincipal = monthlyPayment - firstInterest;
+
+                    totalPayment = monthlyPayment * totalMonths;
+                    totalInterest = totalPayment - loanAmount;
+                }
+            }
+
+            lblLoan.Text = FormatMoney(loanAmount);
+            lblMonthly.Text = FormatMoney(monthlyPayment);
+            lblGraceMonthly.Text = graceMonths > 0 ? FormatMoney(graceMonthlyPayment) : "無";
+            lblFirstInterest.Text = FormatMoney(firstInterest);
+            lblFirstPrincipal.Text = FormatMoney(firstPrincipal);
+            lblTotalInt.Text = FormatMoney(totalInterest);
+            lblTotalPay.Text = FormatMoney(totalPayment);
+        }
+
+        private double CalculateAmortizedPayment(double principal, double monthlyRate, int months)
+        {
+            double factor = Math.Pow(1 + monthlyRate, months);
+            return principal * (monthlyRate * factor) / (factor - 1);
+        }
+
+        private string FormatMoney(double value)
+        {
+            return "NT$ " + value.ToString("N2");
         }
     }
 }
