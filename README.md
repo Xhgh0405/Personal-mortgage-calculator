@@ -50,5 +50,7 @@
 
 <img width="1184" height="564" alt="image" src="https://github.com/user-attachments/assets/f47d2529-2c1d-4e25-ad6f-380bee46ee33" />
 
-```markdown
-![主畫面](images/main_ui.png)
+### 2. 程式執行畫面
+這裡放「程式執行畫面」的截圖，也就是開始計算的畫面。
+
+<img width="1464" height="698" alt="image" src="https://github.com/user-attachments/assets/a506575e-b0b6-420f-bb47-91920992f629" />
