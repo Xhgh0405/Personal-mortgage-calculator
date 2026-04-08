@@ -95,3 +95,10 @@ M = P × [ r(1+r)^n ] / [ (1+r)^n - 1 ]
 這裡放「程式執行畫面」的截圖，也就是開始計算的畫面。
 
 <img width="1464" height="698" alt="image" src="https://github.com/user-attachments/assets/a506575e-b0b6-420f-bb47-91920992f629" />
+
+### 3. 一些錯誤的截圖
+這裡放「一些錯誤的截圖」的截圖，也就是出現錯誤時會出現的畫面。
+
+<img width="1477" height="695" alt="image" src="https://github.com/user-attachments/assets/ca933df4-6897-4653-a41f-3c9a49217715" />
+
+<img width="1453" height="618" alt="image" src="https://github.com/user-attachments/assets/148da707-8dbb-4470-a268-079de95d90d7" />
