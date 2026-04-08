@@ -129,7 +129,7 @@
             this.lblSubTitle.Name = "lblSubTitle";
             this.lblSubTitle.Size = new System.Drawing.Size(464, 18);
             this.lblSubTitle.TabIndex = 1;
-            this.lblSubTitle.Text = "黃白主題橫向版面，支援自備款比例 / 金額切換與完整房貸試算結果";
+            this.lblSubTitle.Text = "";
 
             // panelInput
             this.panelInput.BackColor = System.Drawing.Color.White;
